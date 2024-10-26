@@ -1,10 +1,12 @@
+import 'package:dart_ground_frontend/providers/code_provider.dart';
 import 'package:dart_ground_frontend/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_code_editor/flutter_code_editor.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:highlight/languages/dart.dart';
 import 'package:flutter_highlight/themes/monokai-sublime.dart';
 
-class CodeSection extends StatefulWidget {
+class CodeSection extends ConsumerStatefulWidget {
   const CodeSection({
     super.key,
     required double leftFraction,
@@ -13,10 +15,10 @@ class CodeSection extends StatefulWidget {
   final double _leftFraction;
 
   @override
-  State<CodeSection> createState() => _CodeSectionState();
+  ConsumerState<CodeSection> createState() => _CodeSectionState();
 }
 
-class _CodeSectionState extends State<CodeSection> {
+class _CodeSectionState extends ConsumerState<CodeSection> {
   late CodeController codeController;
 
   void _onTextChanged(String text) {
@@ -54,6 +56,12 @@ class _CodeSectionState extends State<CodeSection> {
   }
 
   @override
+  void dispose() {
+    codeController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Expanded(
       flex: (widget._leftFraction * 100).round(),
@@ -62,7 +70,7 @@ class _CodeSectionState extends State<CodeSection> {
         child: Stack(
           children: [
             Positioned.fill(
-              child: SingleChildScrollView(
+              child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: CodeTheme(
                   data: CodeThemeData(styles: monokaiSublimeTheme),
@@ -78,7 +86,20 @@ class _CodeSectionState extends State<CodeSection> {
               top: 10,
               right: 10,
               child: FilledButton(
-                onPressed: () {},
+                onPressed: () async {
+                  // final response = await _repository
+                  //     .executeCode(codeController.text)
+                  //     .then((value) {
+                  //   print("Executedd::: $value");
+                  // });
+                  print("Preseedddd");
+                  ref
+                      .read(codeResponseNotifierProvider.notifier)
+                      .executeCode(codeController.text)
+                      .then((_) {
+                    print("Excutedddddd");
+                  });
+                },
                 child: const Text('Run'),
               ),
             ),
