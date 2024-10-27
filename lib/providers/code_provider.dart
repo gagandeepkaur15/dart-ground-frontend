@@ -21,15 +21,11 @@ class CodeResponseNotifier extends _$CodeResponseNotifier {
     final client = CodeClient(dio);
 
     try {
-      print("Codeeeeee: $code");
       final response = await client.executeCode(code, "text/plain");
       state = AsyncValue.data(response);
-      print("Response::::: $response");
-      print("Raw Response: ${response.toJson()}");
       return response;
     } catch (error, st) {
       state = AsyncValue.error(error, st);
-      print("Errorr:::::: $error");
       rethrow;
     }
   }

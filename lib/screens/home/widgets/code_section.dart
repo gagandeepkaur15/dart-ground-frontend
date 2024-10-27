@@ -5,6 +5,8 @@ import 'package:flutter_code_editor/flutter_code_editor.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:highlight/languages/dart.dart';
 import 'package:flutter_highlight/themes/monokai-sublime.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io' as io;
 
 class CodeSection extends ConsumerStatefulWidget {
   const CodeSection({
@@ -24,12 +26,19 @@ class _CodeSectionState extends ConsumerState<CodeSection> {
   void _onTextChanged(String text) {
     int cursorPosition = codeController.selection.baseOffset;
 
-    if (text.endsWith('(') || text.endsWith('[') || text.endsWith('{')) {
-      String closingBracket = _getClosingBracket(text[text.length - 1]);
-      codeController.text += closingBracket;
-      codeController.selection = TextSelection.fromPosition(
-        TextPosition(offset: cursorPosition),
-      );
+    if (cursorPosition > 0 && cursorPosition <= text.length) {
+      final lastChar = text[cursorPosition - 1];
+
+      if (lastChar == '(' || lastChar == '[' || lastChar == '{') {
+        String closingBracket = _getClosingBracket(lastChar);
+
+        codeController.text = text.substring(0, cursorPosition) +
+            closingBracket +
+            text.substring(cursorPosition);
+
+        codeController.selection =
+            TextSelection.fromPosition(TextPosition(offset: cursorPosition));
+      }
     }
   }
 
@@ -44,6 +53,17 @@ class _CodeSectionState extends ConsumerState<CodeSection> {
       default:
         return '';
     }
+  }
+
+  void _downloadCode() async {
+    final code = codeController.text;
+    final directory = await getApplicationDocumentsDirectory();
+    final filePath = '${directory.path}/code.dart';
+    final file = io.File(filePath);
+    await file.writeAsString(code);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Code saved to $filePath')),
+    );
   }
 
   @override
@@ -85,22 +105,41 @@ class _CodeSectionState extends ConsumerState<CodeSection> {
             Positioned(
               top: 10,
               right: 10,
-              child: FilledButton(
-                onPressed: () async {
-                  // final response = await _repository
-                  //     .executeCode(codeController.text)
-                  //     .then((value) {
-                  //   print("Executedd::: $value");
-                  // });
-                  print("Preseedddd");
-                  ref
-                      .read(codeResponseNotifierProvider.notifier)
-                      .executeCode(codeController.text)
-                      .then((_) {
-                    print("Excutedddddd");
-                  });
-                },
-                child: const Text('Run'),
+              child: Row(
+                children: [
+                  FilledButton(
+                    onPressed: () async {
+                      if (codeController.text.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content:
+                                    Text('Please write the code to execute')));
+                      } else {
+                        ref
+                            .read(codeResponseNotifierProvider.notifier)
+                            .executeCode(codeController.text)
+                            .then((_) {});
+                      }
+                    },
+                    child: const Text('Run'),
+                  ),
+                  GestureDetector(
+                    onTap: _downloadCode,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      margin: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: context.theme.primaryColor,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.download,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
